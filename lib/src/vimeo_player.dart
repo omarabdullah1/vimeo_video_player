@@ -261,24 +261,32 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
 
   /// give vimeo video configuration from api
   Future<VimeoVideoConfig?> _getVimeoVideoConfig({
-    required String vimeoVideoId,
-  }) async {
-    try {
-      Response responseData = await Dio().get(
-        'https://player.vimeo.com/video/$vimeoVideoId/config',
-        options: widget.dioOptionsForVimeoVideoConfig,
-      );
-      var vimeoVideo = VimeoVideoConfig.fromJson(responseData.data);
-      return vimeoVideo;
-    } on DioException catch (e) {
-      log('Dio Error : ', name: e.error.toString());
-      return null;
-    } on Exception catch (e) {
-      log('Error : ', name: e.toString());
-      return null;
-    }
+  required String vimeoVideoId,
+}) async {
+  try {
+    // Add the Bearer token to the headers
+    Options dioOptions = Options(
+      headers: {
+        'Authorization': 'Bearer 1c5f6ed85a1ce506e8bef9931ef32230',  // Replace with your actual token
+      },
+    );
+
+    Response responseData = await Dio().get(
+      'https://player.vimeo.com/video/$vimeoVideoId/config',
+      options: dioOptionsForVimeoVideoConfig ?? dioOptions,  // Pass provided options if available
+    );
+
+    var vimeoVideo = VimeoVideoConfig.fromJson(responseData.data);
+    return vimeoVideo;
+  } on DioException catch (e) {
+    log('Dio Error : ', name: e.error.toString());
+    return null;
+  } on Exception catch (e) {
+    log('Error : ', name: e.toString());
+    return null;
   }
 }
+
 
 // ignore: library_private_types_in_public_api
 extension ShowAlertDialog on _VimeoVideoPlayerState {
