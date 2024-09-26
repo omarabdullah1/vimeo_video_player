@@ -85,10 +85,8 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
 
   /// used to check that the url format is valid vimeo video format
   bool get _isVimeoVideo {
-    var regExp = _vimeoRegExp;
-    final match = regExp.firstMatch(widget.url);
-    if (match != null && match.groupCount >= 1) return true;
-    return false;
+    final match = _vimeoRegExp.firstMatch(widget.url);
+    return match != null && match.groupCount >= 1;
   }
 
   /// used to check that the video is already seeked or not
@@ -101,13 +99,13 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
     /// checking that vimeo url is valid or not
     if (_isVimeoVideo) {
       if (_videoId.isEmpty) {
-        throw (Exception(
-            'Unable extract video id from given vimeo video url: ${widget.url}'));
+        throw Exception(
+            'Unable extract video id from given vimeo video url: ${widget.url}');
       }
 
       _videoPlayer();
     } else {
-      throw (Exception('Invalid vimeo video url: ${widget.url}'));
+      throw Exception('Invalid vimeo video url: ${widget.url}');
     }
   }
 
@@ -241,7 +239,6 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
         videoPlayerController:
             _videoPlayerController ?? _emptyVideoPlayerController,
         autoPlay: widget.autoPlay,
-        // ignore: use_build_context_synchronously
       )..registerContext(context);
 
       isVimeoVideoLoaded.value = !isVimeoVideoLoaded.value;
@@ -278,15 +275,20 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
       return null;
     }
   }
+
+  /// Getter for extracting the Vimeo video ID
+  String get _videoId {
+    final match = _vimeoRegExp.firstMatch(widget.url);
+    return match?.group(1) ?? '';
+  }
 }
 
-// ignore: library_private_types_in_public_api
+// Properly declared extension for showing alert dialog
 extension ShowAlertDialog on _VimeoVideoPlayerState {
-  showAlertDialog(BuildContext context) {
-    // set up the AlertDialog
+  void showAlertDialog(BuildContext context) {
     AlertDialog alert = AlertDialog(
       title: const Text("Alert"),
-      content: const Text("Some thing wrong with this url"),
+      content: const Text("Something went wrong with this URL"),
       actions: [
         TextButton(
           child: const Text("OK"),
@@ -297,17 +299,11 @@ extension ShowAlertDialog on _VimeoVideoPlayerState {
       ],
     );
 
-    // show the dialog
     showDialog(
       context: context,
       builder: (BuildContext context) {
         return alert;
       },
     );
-  }
-
-  String get _videoId {
-    RegExpMatch? match = _vimeoRegExp.firstMatch(widget.url);
-    return match?.group(1) ?? '';
   }
 }
