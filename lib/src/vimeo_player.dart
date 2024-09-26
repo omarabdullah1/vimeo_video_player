@@ -5,7 +5,6 @@ import 'package:flick_video_player/flick_video_player.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:video_player/video_player.dart';
-
 import 'model/vimeo_video_config.dart';
 
 class VimeoVideoPlayer extends StatefulWidget {
@@ -25,7 +24,7 @@ class VimeoVideoPlayer extends StatefulWidget {
       DeviceOrientation.landscapeLeft,
       DeviceOrientation.landscapeRight,
       DeviceOrientation.portraitUp,
-      DeviceOrientation.portraitDown
+      DeviceOrientation.portraitDown,
     ],
     this.startAt,
     this.onProgress,
@@ -43,6 +42,7 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
   VideoPlayerController? _videoPlayerController;
   final VideoPlayerController _emptyVideoPlayerController =
       VideoPlayerController.networkUrl(Uri.parse(''));
+
   FlickManager? _flickManager;
   ValueNotifier<bool> isVimeoVideoLoaded = ValueNotifier(false);
 
@@ -55,8 +55,7 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
   bool _isSeekedVideo = false;
 
   bool get _isVimeoVideo {
-    var regExp = _vimeoRegExp;
-    final match = regExp.firstMatch(widget.url);
+    final match = _vimeoRegExp.firstMatch(widget.url);
     return match != null && match.groupCount >= 1;
   }
 
@@ -66,11 +65,11 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
     if (_isVimeoVideo) {
       if (_videoId.isEmpty) {
         throw Exception(
-            'Unable to extract video id from given vimeo video url: ${widget.url}');
+            'Unable to extract video id from the given Vimeo video url: ${widget.url}');
       }
       _videoPlayer();
     } else {
-      throw Exception('Invalid vimeo video url: ${widget.url}');
+      throw Exception('Invalid Vimeo video url: ${widget.url}');
     }
   }
 
@@ -88,8 +87,10 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
     _videoPlayerController?.dispose();
     _emptyVideoPlayerController.dispose();
     isVimeoVideoLoaded.dispose();
-    SystemChrome.setEnabledSystemUIMode(SystemUiMode.manual,
-        overlays: SystemUiOverlay.values);
+    SystemChrome.setEnabledSystemUIMode(
+      SystemUiMode.manual,
+      overlays: SystemUiOverlay.values,
+    );
     super.dispose();
   }
 
@@ -108,15 +109,20 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
                   systemUIOverlay: widget.systemUiOverlay,
                   preferredDeviceOrientation: widget.deviceOrientation,
                   flickVideoWithControls: const FlickVideoWithControls(
-                      videoFit: BoxFit.fitWidth,
-                      controls: FlickPortraitControls()),
+                    videoFit: BoxFit.fitWidth,
+                    controls: FlickPortraitControls(),
+                  ),
                   flickVideoWithControlsFullscreen:
                       const FlickVideoWithControls(
-                          controls: FlickLandscapeControls()),
+                    controls: FlickLandscapeControls(),
+                  ),
                 )
               : const Center(
                   child: CircularProgressIndicator(
-                      color: Colors.grey, backgroundColor: Colors.white)),
+                    color: Colors.grey,
+                    backgroundColor: Colors.white,
+                  ),
+                ),
         ),
       ),
       onPopInvoked: (didPop) {
@@ -149,11 +155,14 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
       _videoPlayerController!.addListener(() {
         final videoData = _videoPlayerController!.value;
         if (videoData.isInitialized) {
-          if (videoData.isPlaying && onProgressCallback != null) {
-            onProgressCallback.call(videoData.position);
-          } else if (videoData.duration == videoData.position &&
-              onFinishCallback != null) {
-            onFinishCallback.call();
+          if (videoData.isPlaying) {
+            if (onProgressCallback != null) {
+              onProgressCallback.call(videoData.position);
+            }
+          } else if (videoData.duration == videoData.position) {
+            if (onFinishCallback != null) {
+              onFinishCallback.call();
+            }
           }
         }
       });
@@ -164,6 +173,7 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
     _getVimeoVideoConfigFromUrl(widget.url).then((value) async {
       final progressiveList = value?.request?.files?.progressive;
       var vimeoMp4Video = '';
+
       if (progressiveList != null && progressiveList.isNotEmpty) {
         progressiveList.map((element) {
           if (element != null &&
@@ -173,43 +183,55 @@ class _VimeoVideoPlayerState extends State<VimeoVideoPlayer> {
             vimeoMp4Video = element.url ?? '';
           }
         }).toList();
+
         if (vimeoMp4Video.isEmpty) {
           showAlertDialog(context);
         }
       }
+
       _videoPlayerController =
           VideoPlayerController.networkUrl(Uri.parse(vimeoMp4Video));
       _setVideoInitialPosition();
       _setVideoListeners();
+
       _flickManager = FlickManager(
-          videoPlayerController:
-              _videoPlayerController ?? _emptyVideoPlayerController,
-          autoPlay: widget.autoPlay);
+        videoPlayerController:
+            _videoPlayerController ?? _emptyVideoPlayerController,
+        autoPlay: widget.autoPlay,
+      );
+
       if (mounted) {
         isVimeoVideoLoaded.value = !isVimeoVideoLoaded.value;
       }
     });
   }
 
-  Future<VimeoVideoConfig?> _getVimeoVideoConfigFromUrl(String url,
-      {bool trimWhitespaces = true}) async {
+  Future<VimeoVideoConfig?> _getVimeoVideoConfigFromUrl(
+    String url, {
+    bool trimWhitespaces = true,
+  }) async {
     if (trimWhitespaces) url = url.trim();
+
     final response = await _getVimeoVideoConfig(vimeoVideoId: _videoId);
     return (response != null) ? response : null;
   }
 
-  Future<VimeoVideoConfig?> _getVimeoVideoConfig(
-      {required String vimeoVideoId}) async {
+  Future<VimeoVideoConfig?> _getVimeoVideoConfig({
+    required String vimeoVideoId,
+  }) async {
     try {
       Options dioOptions = Options(
         headers: {
           'Authorization':
-              'Bearer YOUR_BEARER_TOKEN', // Replace with your actual token
+              'Bearer YOUR_BEARER_TOKEN', // Replace with actual token
         },
       );
+
       Response responseData = await Dio().get(
-          'https://player.vimeo.com/video/$vimeoVideoId/config',
-          options: widget.dioOptionsForVimeoVideoConfig ?? dioOptions);
+        'https://player.vimeo.com/video/$vimeoVideoId/config',
+        options: widget.dioOptionsForVimeoVideoConfig ?? dioOptions,
+      );
+
       var vimeoVideo = VimeoVideoConfig.fromJson(responseData.data);
       return vimeoVideo;
     } catch (e) {
@@ -233,7 +255,12 @@ extension _ShowAlertDialog on _VimeoVideoPlayerState {
         ),
       ],
     );
-    showDialog(context: context, builder: (BuildContext context) => alert);
+
+    showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return alert;
+        });
   }
 
   String get _videoId {
